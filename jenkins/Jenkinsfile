@@ -89,6 +89,11 @@ pipeline {
                 sh 'pwd'
                 sh 'ls'
                 sh 'ls ./final-exam/docker'
+                sh 'echo "see what here"'
+                sh 'ls ./final-exam/docker/aws-flask-app'
+                sh 'echo "see what here2"'
+                sh 'ls ./final-exam/docker/aws-flask-app@tmp'
+                
             }
         }
         
