@@ -1,40 +1,118 @@
+// pipeline {
+//     agent any
+    
+//     environment {
+//         DOCKERHUB_USERNAME = credentials('dockerhub-credentials')  // Jenkins credential ID
+//         DOCKERHUB_PASSWORD = credentials('dockerhub-credentials')  // Jenkins credential ID
+//         IMAGE_NAME = "${DOCKERHUB_USERNAME}/flask-aws-monitor"
+//         IMAGE_TAG = "${env.BUILD_NUMBER}"  // Use Jenkins build number as tag
+//     }
+    
+//     stages {
+//         stage('Clone Repository') {
+//             steps {
+//                 git branch: 'main', url: 'https://github.com/yovelzig/final-exam.git'
+//                 sh 'git checkout dev'
+//             }
+//         }
+        
+//         stage('Parallel Checks') {
+//             parallel {
+//                 stage('Linting') {
+//                     steps {
+//                         // // Python linting with Flake8
+//                         // sh 'pip install flake8 && flake8 app.py --max-line-length=100 || true'
+//                         // // Dockerfile linting with Hadolint
+//                         // sh 'docker run --rm -i hadolint/hadolint < Dockerfile || true'
+//                         // Mock ShellCheck (assuming no shell scripts, so just an echo)
+//                         sh 'echo "ShellCheck would run here if there were shell scripts"'
+//                     }
+//                 }
+//                 stage('Security Scan') {
+//                     steps {
+//                         // // Bandit for Python security
+//                         // sh 'pip install bandit && bandit -r app.py || true'
+//                         // Trivy for Docker image (built later, so mock here)
+//                         sh 'echo "Trivy scan would run after build: trivy image ${IMAGE_NAME}:${IMAGE_TAG}"'
+//                     }
+//                 }
+//             }
+//         }
+        
+//         stage('Build Docker Image') {
+//             steps {
+//                 dir('final-exam/docker/aws-flask-app'){
+//                 sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
+//                 sh 'docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest'
+//                 }
+//             }
+//         }
+        
+//         stage('Push to Docker Hub') {
+//             steps {
+//                 withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', 
+//                                                usernameVariable: 'DOCKERHUB_USERNAME', 
+//                                                passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+//                     sh 'echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin'
+//                     sh 'docker push ${IMAGE_NAME}:${IMAGE_TAG}'
+//                     sh 'docker push ${IMAGE_NAME}:latest'
+//                 }
+//             }
+//         }
+//     }
+    
+//     post {
+//         always {
+//             sh 'docker logout'  // Clean up Docker login
+//         }
+//         success {
+//             echo 'Pipeline completed successfully! Image pushed to Docker Hub.'
+//         }
+//         failure {
+//             echo 'Pipeline failed! Check logs for details.'
+//         }
+//     }
+// }
 pipeline {
     agent any
-    
     environment {
-        DOCKERHUB_USERNAME = credentials('dockerhub-credentials')  // Jenkins credential ID
-        DOCKERHUB_PASSWORD = credentials('dockerhub-credentials')  // Jenkins credential ID
-        IMAGE_NAME = "${DOCKERHUB_USERNAME}/flask-aws-monitor"
-        IMAGE_TAG = "${env.BUILD_NUMBER}"  // Use Jenkins build number as tag
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+        DOCKER_REGISTRY = 'yovelzig'
+        REPO_NAME = 'final-exam'
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
-    
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: 'https://github.com/yovelzig/final-exam.git'
-                sh 'git checkout dev'
+                git branch: 'dev', url: 'https://github.com/kobi070/e2e-devops.git'
             }
         }
         
-        stage('Parallel Checks') {
-            parallel {
-                stage('Linting') {
-                    steps {
-                        // // Python linting with Flake8
-                        // sh 'pip install flake8 && flake8 app.py --max-line-length=100 || true'
-                        // // Dockerfile linting with Hadolint
-                        // sh 'docker run --rm -i hadolint/hadolint < Dockerfile || true'
-                        // Mock ShellCheck (assuming no shell scripts, so just an echo)
-                        sh 'echo "ShellCheck would run here if there were shell scripts"'
+        stage('install Lint & Security Scan') {
+            steps {
+                sh 'echo "ShellCheck would run here if there were shell scripts"'
+                // sh 'ls -l'
+                // sh 'pip install flake8 bandit'
+            }
+        }
+
+        stage('Parallel Lint & Security Scan') {
+            steps {
+                parallel(
+                    Lint: {
+                        sh 'echo "flake8 . || true"'
+                    },
+                    Security: {
+                        sh 'echo "bandit -r . || true"'
                     }
-                }
-                stage('Security Scan') {
-                    steps {
-                        // // Bandit for Python security
-                        // sh 'pip install bandit && bandit -r app.py || true'
-                        // Trivy for Docker image (built later, so mock here)
-                        sh 'echo "Trivy scan would run after build: trivy image ${IMAGE_NAME}:${IMAGE_TAG}"'
-                    }
+                )
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                dir('final-exam/docker/aws-flask-app'){
+                sh 'pip install -r docker/src/requirements.txt'
                 }
             }
         }
@@ -42,34 +120,21 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 dir('final-exam/docker/aws-flask-app'){
-                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
-                sh 'docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest'
-                }
+                sh "docker build -t $DOCKER_REGISTRY/$REPO_NAME:$IMAGE_TAG docker/"
+                sh "docker tag $DOCKER_REGISTRY/$REPO_NAME:$IMAGE_TAG $DOCKER_REGISTRY/$REPO_NAME:latest"
             }
+          } 
         }
+        
+
         
         stage('Push to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', 
-                                               usernameVariable: 'DOCKERHUB_USERNAME', 
-                                               passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-                    sh 'echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin'
-                    sh 'docker push ${IMAGE_NAME}:${IMAGE_TAG}'
-                    sh 'docker push ${IMAGE_NAME}:latest'
-                }
+                sh "echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin"
+                sh "docker push $DOCKER_REGISTRY/$REPO_NAME:$IMAGE_TAG"
+                sh "docker push $DOCKER_REGISTRY/$REPO_NAME:latest"
             }
         }
-    }
-    
-    post {
-        always {
-            sh 'docker logout'  // Clean up Docker login
-        }
-        success {
-            echo 'Pipeline completed successfully! Image pushed to Docker Hub.'
-        }
-        failure {
-            echo 'Pipeline failed! Check logs for details.'
-        }
+        
     }
 }
