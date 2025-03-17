@@ -2,11 +2,11 @@ FROM python:3.11-slim as builder
 
 WORKDIR /app
 
-# Copy requirements.txt and install libs
+# Copy requirements.txt and lib installing
 COPY src/requirements.txt .
 RUN pip install -r requirements.txt
 
-# 2nd Stage using the builder stage
+# the second Stage using the builder stage
 FROM python:3.11-slim
 
 WORKDIR /app
