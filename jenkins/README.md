@@ -1,0 +1,1 @@
+connect to jenkins add credencials then create a new pipeline from git and give my path to git repo and path to the jenkinsfile
