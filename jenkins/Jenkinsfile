@@ -84,7 +84,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'dev', url: 'https://github.com/kobi070/e2e-devops.git'
+                git branch: 'dev', url: 'https://github.com/yovelzig/final-exam.git'
             }
         }
         
@@ -111,7 +111,7 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                dir('final-exam/docker/aws-flask-app/'){
+                dir('final-exam/docker/aws-flask-app'){
                 sh 'echo "pip install -r src/requirements.txt"'
                 }
             }
@@ -119,7 +119,7 @@ pipeline {
         
         stage('Build Docker Image') {
             steps {
-                dir('final-exam/docker/aws-flask-app/'){
+                dir('final-exam/docker/aws-flask-app'){
                 sh 'pwd'
                 sh 'ls'    
                 sh "docker build -t $DOCKER_REGISTRY/$REPO_NAME:$IMAGE_TAG /"
