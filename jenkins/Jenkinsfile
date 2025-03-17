@@ -111,19 +111,20 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                dir('final-exam/docker/aws-flask-app'){
-                sh 'echo "pip install -r src/requirements.txt"'
+                dir('final-exam/docker/aws-flask-app/'){
+                    sh 'ls'
+                    sh 'echo "pip install -r src/requirements.txt"'
                 }
             }
         }
         
         stage('Build Docker Image') {
             steps {
-                dir('final-exam/docker/aws-flask-app'){
-                sh 'pwd'
-                sh 'ls'    
-                sh "docker build -t $DOCKER_REGISTRY/$REPO_NAME:$IMAGE_TAG /"
-                sh "docker tag $DOCKER_REGISTRY/$REPO_NAME:$IMAGE_TAG $DOCKER_REGISTRY/$REPO_NAME:latest"
+                dir('final-exam/docker/aws-flask-app/'){
+                    sh 'pwd'
+                    sh 'ls'    
+                    sh "docker build -t $DOCKER_REGISTRY/$REPO_NAME:$IMAGE_TAG /"
+                    sh "docker tag $DOCKER_REGISTRY/$REPO_NAME:$IMAGE_TAG $DOCKER_REGISTRY/$REPO_NAME:latest"
             }
           } 
         }
