@@ -112,7 +112,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 dir('final-exam/docker/aws-flask-app/'){
-                sh 'pip install -r src/requirements.txt'
+                sh 'echo "pip install -r src/requirements.txt"'
                 }
             }
         }
