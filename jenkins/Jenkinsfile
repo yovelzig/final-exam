@@ -125,7 +125,7 @@ pipeline {
                 dir('final-exam/docker/aws-flask-app/'){
                     sh 'pwd'
                     sh 'ls'    
-                    sh "docker build -t $DOCKER_REGISTRY/$REPO_NAME:$IMAGE_TAG /"
+                    sh "docker build -t $DOCKER_REGISTRY/$REPO_NAME:$IMAGE_TAG -f Dockerfile ."
                     sh "docker tag $DOCKER_REGISTRY/$REPO_NAME:$IMAGE_TAG $DOCKER_REGISTRY/$REPO_NAME:latest"
             }
           } 
