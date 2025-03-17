@@ -50,7 +50,7 @@ stages:
   - job: BuildDockerImageJob
     steps:
     - script: |
-        docker build -t $(DOCKER_REGISTRY)/$(REPO_NAME):$(IMAGE_TAG) docker/aws-flask-app/Dockerfile . 
+        docker build -t $(DOCKER_REGISTRY)/$(REPO_NAME):$(IMAGE_TAG) -f docker/aws-flask-app/Dockerfile docker/aws-flask-app
         docker tag $(DOCKER_REGISTRY)/$(REPO_NAME):$(IMAGE_TAG) $(DOCKER_REGISTRY)/$(REPO_NAME):latest
       displayName: 'Build Docker Image'
 
