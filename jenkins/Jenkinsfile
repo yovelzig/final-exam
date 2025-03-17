@@ -93,6 +93,7 @@ pipeline {
                 sh 'ls ./final-exam/docker/aws-flask-app'
                 sh 'echo "see what here2"'
                 sh 'ls ./final-exam/docker/aws-flask-app@tmp'
+                sh 'ls ./docker'
                 
             }
         }
