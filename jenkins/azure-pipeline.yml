@@ -1,100 +1,65 @@
 trigger:
-- dev  # Trigger on pushes to the 'dev' branch
+- dev
 
-pool:
-  vmImage: 'ubuntu-latest'  # Use an Ubuntu agent with Docker pre-installed
-
+    
 variables:
-  # Variables from Azure DevOps secrets/variable group
-  DOCKERHUB_USERNAME: $(dockerHubUsername)  # Define in pipeline variables or variable group
-  DOCKERHUB_PASSWORD: $(dockerHubPassword)  # Define as a secret
   DOCKER_REGISTRY: 'yovelzig'
   REPO_NAME: 'final-exam'
-  IMAGE_TAG: '$(Build.BuildId)'  # Use Azure DevOps build ID as tag
+  IMAGE_TAG: $(Build.BuildId)
 
 stages:
-- stage: BuildAndDeploy
+- stage: CloneRepository
   jobs:
-  - job: CloneAndChecks
+  - job: CloneRepositoryJob
     steps:
     - checkout: self
-      submodules: true
-      persistCredentials: true
-      fetchDepth: 0
+    - script: |
+        git fetch --all
+        git checkout dev
       displayName: 'Clone Repository'
-      # Checkout the 'dev' branch explicitly
-      ref: 'refs/heads/dev'
 
-
-    - script: |
-        echo "ShellCheck would run here if there were shell scripts"
-      displayName: 'Install Lint & Security Scan (Mock)'
-
-    - task: Bash@3
-      displayName: 'Parallel Lint & Security Scan'
-      inputs:
-        targetType: 'inline'
-        script: |
-          # Parallel execution simulated with background jobs
-          (echo "flake8 . || true" && sleep 1) &
-          (echo "bandit -r . || true" && sleep 1) &
-          wait  # Wait for all background jobs to complete
-
-  - job: BuildAndPush
-    dependsOn: CloneAndChecks
-    steps:
-    - script: |
-        pwd
-        ls -la || dir
-        echo "pip install -r docker/aws-flask-app/requirements.txt (mocked)"
-      workingDirectory: 'docker/aws-flask-app'
-      displayName: 'Install Dependencies (Mock)'
-
-    - task: Docker@2
-      displayName: 'Build Docker Image'
-      inputs:
-        command: 'build'
-        Dockerfile: 'docker/aws-flask-app/Dockerfile'
-        buildContext: 'docker/aws-flask-app'
-        repository: '$(DOCKER_REGISTRY)/$(REPO_NAME)'
-        tags: |
-          $(IMAGE_TAG)
-          latest
-
-    - task: Docker@2
-      displayName: 'Push to Docker Hub'
-      inputs:
-        command: 'push'
-        containerRegistry: 'dockerHubConnection'  # Service connection name
-        repository: '$(DOCKER_REGISTRY)/$(REPO_NAME)'
-        tags: |
-          $(IMAGE_TAG)
-          latest
-      env:
-        DOCKERHUB_USERNAME: $(DOCKERHUB_USERNAME)
-        DOCKERHUB_PASSWORD: $(DOCKERHUB_PASSWORD)
-
-resources:
-  repositories:
-  - repository: self
-    type: git
-    ref: 'refs/heads/dev'
-    endpoint: 'github-connection'  # Optional: GitHub service connection name if needed
-
-# Post-build actions
-- stage: PostBuild
+- stage: InstallLintAndSecurityScan
   jobs:
-  - job: Cleanup
+  - job: InstallLintAndSecurityScanJob
     steps:
     - script: |
-        docker logout
-      displayName: 'Docker Logout'
-      condition: always()  # Runs regardless of success/failure
+        echo "pip install flake8 bandit"
+      displayName: 'Install Lint & Security Scan'
+
+- stage: ParallelLintAndSecurityScan
+  jobs:
+  - job: ParallelLintAndSecurityScanJob
+    steps:
     - script: |
-        echo "Pipeline completed successfully! Image pushed to Docker Hub."
-      displayName: 'Success Message'
-      condition: succeeded()
+        echo "flake8 . || true"
+      displayName: 'Run Lint'
     - script: |
-        echo "Pipeline failed! Check logs for details."
-      displayName: 'Failure Message'
-      condition: failed()
+        echo :"bandit -r . || true"
+      displayName: 'Run Security Scan'
+
+- stage: InstallDependencies
+  jobs:
+  - job: InstallDependenciesJob
+    steps:
+    - script: |
+        echo "pip install -r docker/src/requirements.txt"
+      displayName: 'Install Dependencies'
+
+- stage: BuildDockerImage
+  jobs:
+  - job: BuildDockerImageJob
+    steps:
+    - script: |
+        docker build -t $(DOCKER_REGISTRY)/$(REPO_NAME):$(IMAGE_TAG) docker/aws-flask-app/Dockerfile . 
+        docker tag $(DOCKER_REGISTRY)/$(REPO_NAME):$(IMAGE_TAG) $(DOCKER_REGISTRY)/$(REPO_NAME):latest
+      displayName: 'Build Docker Image'
+
+- stage: PushToDockerHub
+  jobs:
+  - job: PushToDockerHubJob
+    steps:
+    - script: |
+        echo $(DOCKERHUB_CREDENTIALS_PSW) | docker login -u $(DOCKERHUB_CREDENTIALS_USR) --password-stdin
+        echo docker push $(DOCKER_REGISTRY)/$(REPO_NAME):$(IMAGE_TAG)
+        echo docker push $(DOCKER_REGISTRY)/$(REPO_NAME):latest
+      displayName: 'Push Docker Image to Docker Hub'
