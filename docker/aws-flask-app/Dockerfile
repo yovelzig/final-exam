@@ -5,7 +5,8 @@ FROM python:3.9-slim AS builder
 WORKDIR /app
 
 # העתקת קובץ הדרישות והתקנת התלויות
-COPY requirements.txt .
+COPY ./requirements.txt /app/requirements.txt
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 # שלב שני: יצירת התמונה הסופית
