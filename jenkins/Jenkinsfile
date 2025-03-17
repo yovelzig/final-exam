@@ -86,6 +86,7 @@ pipeline {
             steps {
                 git branch: 'dev', url: 'https://github.com/yovelzig/final-exam.git'
                 // sh 'git checkout dev'
+                sh 'pwd'
                 sh 'ls'
             }
         }
