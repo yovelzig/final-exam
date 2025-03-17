@@ -84,7 +84,9 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'dev', url: 'https://github.com/yovelzig/final-exam.git'
+                git branch: 'main', url: 'https://github.com/yovelzig/final-exam.git'
+                sh 'git checkout dev'
+                sh 'ls'
             }
         }
         
