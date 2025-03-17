@@ -88,6 +88,7 @@ pipeline {
                 // sh 'git checkout dev'
                 sh 'pwd'
                 sh 'ls'
+                sh 'ls ./final-exam'
             }
         }
         
